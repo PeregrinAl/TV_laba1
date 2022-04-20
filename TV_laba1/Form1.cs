@@ -36,26 +36,67 @@ namespace TV_laba1
         private List<double> max = new List<double>();
         private List<double> min = new List<double>();
         private int time;
+        private double pos_to_wall;
+        private double from_wall;
+
+        private int distance;
 
         private void get_data(int i) {
             #region getting_data
+
+            count_of_exp = System.Convert.ToInt32(number_of_experiments.Text);
+            count_of_sers = System.Convert.ToInt32(number_of_series.Text);
             try
             {
-                count_of_exp = System.Convert.ToInt32(number_of_experiments.Text);
-                count_of_sers = System.Convert.ToInt32(number_of_series.Text);
-                if (i == 1) time = System.Convert.ToInt32(textBox2.Text);
                 ver_otkl = Convert.ToDouble(textBox1.Text.Replace('.', ','));
                 aver_otkl = 1 - ver_otkl;
             }
             catch (FormatException)
             {
-                ver_otkl = 0;
-                aver_otkl = 1;
-                time = 15;
+                ver_otkl = 1;
+                aver_otkl = 0;
             }
             del_range = (int)(count_of_sers * (aver_otkl / 2));
-            
+
+            try
+            {
+                if (i == 1)
+                {
+                    time = System.Convert.ToInt32(textBox2.Text);
+                }
+            }
+            catch (FormatException)
+            {
+                time = 15;
+            }
+
+            try
+            {
+                if (i == 2)
+                {
+                    distance = System.Convert.ToInt32(textBox3.Text);
+                }
+            }
+            catch (FormatException)
+            {
+                distance = 1;
+            }
+            try
+            {
+                if (i == 2)
+                {
+                    pos_to_wall = System.Convert.ToDouble(textBox4.Text);
+                    from_wall = 1 - pos_to_wall;
+                }
+            }
+            catch (FormatException)
+            {
+                pos_to_wall = 0.33;
+                from_wall = 0.66;
+            }
             #endregion
+
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -148,6 +189,11 @@ namespace TV_laba1
                 chart1.Series[count_of_sers + 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
                 chart1.Series[count_of_sers + 1].BorderWidth = 2;
                 chart1.Series[count_of_sers + 1].Color = Color.Orange;
+
+                chart1.Series.Add("sr");
+                chart1.Series[count_of_sers + 2].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chart1.Series[count_of_sers + 2].Color = Color.Black;
+                chart1.Series[count_of_sers + 2].BorderWidth = 2;
             }
             catch (ArgumentOutOfRangeException) { 
             
@@ -166,6 +212,10 @@ namespace TV_laba1
                         min.Add(chart1.Series[j].Points[i - 1].YValues[0]);
                         max.Add(chart1.Series[j].Points[i - 1].YValues[0]);
                     }
+
+                    //chart2.Series[0].Points.AddXY(i, Math.Round(Exp_two - Math.Abs(max.Sum() / count_of_sers), 4));
+                    chart1.Series[count_of_sers + 2].Points.AddXY(i, max.Sum() / count_of_sers);
+
                     min.Sort();
                     min.RemoveRange(0, del_range);
                     max.Sort();
@@ -189,12 +239,31 @@ namespace TV_laba1
 
             label3.Text = "Результат: " + Math.Round(Y, 4) + " ± " + Math.Round(eps, 4);
             label4.Text = "Отклонение от теоретического значения: " + Math.Round(Math.Abs(Exp_one - Y), 4);
+            label5.Text = "Теоретическое значение: " + Exp_one;
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             get_data(1);
+            int X1;
 
+            #region chart
+            chart1.Series.Clear();
+            chart1.ChartAreas[0].AxisX.IsLogarithmic = false;
+
+            chart2.Series.Clear();
+            chart2.ChartAreas[0].AxisX.IsLogarithmic = false;
+            chart2.ChartAreas[0].AxisY.Minimum = 0;
+
+            chart2.Series.Add("Отклонение");
+            chart2.Series.Add("Погрешность");
+            chart2.Series.Add("Практическая оценка");
+            chart2.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart2.Series[0].BorderWidth = 2;
+            chart2.Series[1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart2.Series[1].BorderWidth = 2;
+            chart2.Series[2].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart2.Series[2].BorderWidth = 2;
 
             chart3.Series.Clear();
             chart3.ChartAreas.Clear();
@@ -203,21 +272,281 @@ namespace TV_laba1
             chart3.ChartAreas[0].AxisX.Minimum = 0;
             chart3.ChartAreas[0].AxisY.Maximum = 60;
             chart3.ChartAreas[0].AxisY.Minimum = 0;
-            chart3.ChartAreas[0].AxisY.MajorGrid.Enabled = false;
-            chart3.ChartAreas[0].AxisX.MajorGrid.Enabled = false;
+            chart3.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.LightBlue;
+            chart3.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.LightBlue;
             chart3.Series.Add("meets");
-            chart3.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Bubble;
+            chart3.Legends.Clear();
+            chart3.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Point;
 
-
-
-            Exp_two = (3600 - (60 - time) * (60 - time)) / 3600;
-            for (int i = 0; i < 60; i++) {
-                for (int j = 0; j < 60; j++) {
-                    if (Math.Abs(i - j) < 15) {
+            Exp_two = (3600 - (60 - time) * (60 - time)) / (double)3600;
+            for (int i = 0; i < 60; i++)
+            {
+                for (int j = 0; j < 60; j++)
+                {
+                    if (Math.Abs(i - j) < time)
+                    {
                         chart3.Series[0].Points.AddXY(i, j);
                     }
                 }
             }
+
+            #endregion
+
+            #region logic
+            for (int i = 0; i < count_of_sers; i++)
+            {
+                chart1.Series.Add(i.ToString());
+                chart1.Series[i].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chart1.Legends.Clear();
+
+                good_exp = 0;
+                sum = 0;
+
+                for (int j = 1; j <= count_of_exp; j++)
+                {
+                    X = Randomizer.Next(0, 60);
+                    X1 = Randomizer.Next(0, 60);
+                    if (Math.Abs(X - X1) < time) good_exp++;
+                    Y = (double)good_exp / j;
+                    sum += Math.Round(Y, 4);
+                    middle = (sum / j);
+                    chart1.Series[i].Points.AddXY(j, Y);
+
+                    double result = table.get_by_y(ver_otkl / 2);
+
+                    eps = result * Math.Pow(Exp_two * (1 - Exp_two) / j, .5);
+
+                    if (i == count_of_sers - 1 && textBox1.Text != "")
+                    {
+                        try
+                        {
+                            chart2.Series[1].Points.AddXY(j, Math.Abs(Math.Round(eps, 4)));
+                        }
+                        catch (ArgumentOutOfRangeException) { }
+                    }
+                }
+            }
+            chart1.ChartAreas[0].AxisX.IsLogarithmic = true;
+            chart2.ChartAreas[0].AxisX.IsLogarithmic = true;
+
+            #endregion
+
+            #region logic1
+            chart1.Series.Add("рукав1");
+            chart1.Series[count_of_sers].Color = Color.Orange;
+            chart1.Series[count_of_sers].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart1.Series[count_of_sers].BorderWidth = 2;
+            chart1.Series.Add("рукав2");
+            chart1.Series[count_of_sers+1].Color = Color.Orange;
+            chart1.Series[count_of_sers+1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart1.Series[count_of_sers+1].BorderWidth = 2;
+            chart1.Series.Add("sr");
+            chart1.Series[count_of_sers + 2].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart1.Series[count_of_sers + 2].Color = Color.Black;
+            chart1.Series[count_of_sers + 2].BorderWidth = 2;
+            try
+            {
+                for (int i = 1; i <= count_of_exp; i++)
+                {
+                    min.Clear();
+                    max.Clear();
+                    for (int j = 0; j < count_of_sers; j++)
+                    {
+                        min.Add(chart1.Series[j].Points[i - 1].YValues[0]);
+                        max.Add(chart1.Series[j].Points[i - 1].YValues[0]);
+                    }
+
+                    chart1.Series[count_of_sers + 2].Points.AddXY(i, max.Sum() / count_of_sers);
+                    chart2.Series[0].Points.AddXY(i, Math.Round(Exp_two - Math.Abs(max.Sum() / count_of_sers), 4));
+
+
+                    min.Sort();
+                    min.RemoveRange(0, del_range);
+                    max.Sort();
+                    max.RemoveRange(count_of_sers - del_range, del_range);
+
+                    
+
+                    chart1.Series[count_of_sers].Points.AddXY(i, min.Min());
+                    chart1.Series[count_of_sers + 1].Points.AddXY(i, max.Max());
+
+                    // практическая оценка
+                    chart2.Series[2].Points.AddXY(i, Math.Round((max.Max() - min.Min()) / 2, 4));
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+
+            }
+
+            #endregion logic1
+
+            label3.Text = "Результат: " + Math.Round(Y, 4) + " ± " + Math.Round(eps, 4);
+            label4.Text = "Отклонение от теоретического значения: " + Math.Round(Math.Abs(Exp_two - Y), 4);
+            label5.Text = "Теоретическое значение: " + Math.Round(Exp_two, 3);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            get_data(2);
+            int cycle = Convert.ToInt32(textBox5.Text);
+
+            #region charts
+            /*очистка графиков*/
+
+            chart1.Series.Clear();
+            chart2.Series.Clear();
+
+            chart1.ChartAreas.Clear();
+            chart1.ChartAreas.Add("area1");
+
+            chart1.ChartAreas[0].AxisY.Maximum = 1;
+            chart1.ChartAreas[0].AxisY.Minimum = 0;
+
+            chart1.ChartAreas[0].AxisX.MajorGrid.Interval = 0.5;
+            chart1.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.GhostWhite;
+            chart1.ChartAreas[0].AxisY.MajorGrid.Interval = 0.5;
+            chart1.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.LightGray;
+
+
+            chart2.ChartAreas.Clear();
+            chart2.ChartAreas.Add("area2");
+
+            chart2.ChartAreas[0].AxisY.Maximum = 1.2;
+            chart2.ChartAreas[0].AxisY.Minimum = 0;
+
+            chart2.ChartAreas[0].AxisY.MajorGrid.Interval = 0.1;
+            chart2.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.GhostWhite;
+            chart2.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.LightGray;
+
+
+            chart2.Series.Add("Погрешность");
+            chart2.Series.Add("Практическая оценка");
+            chart2.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart2.Series[0].BorderWidth = 2;
+            chart2.Series[1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            chart2.Series[1].BorderWidth = 2;
+            #endregion charts
+
+            #region logic
+            for (int i = 0; i < count_of_sers; i++)
+            {
+                chart1.Series.Add(i.ToString());
+                chart1.Series[i].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chart1.Legends.Clear();
+
+                good_exp = 0;
+                sum = 0;
+
+                for (int j = 1; j <= count_of_exp; j++)
+                {
+
+                    for (int o = 0; o < cycle; o++) {
+                        if (Randomizer.NextDouble() < pos_to_wall) distance--;
+                        else distance++;
+
+                        if (distance <= 0)
+                        {
+                            good_exp++;
+                            break;
+                        }
+                    }
+
+                    try
+                    {
+                        distance = Convert.ToInt32(textBox3.Text);
+                    }
+                    catch (FormatException)
+                    {
+                        distance = 1;
+                    }
+
+                    Y = (double)good_exp / j;
+                    sum += Math.Round(Y, 4);
+                    middle = (sum / j);
+                    chart1.Series[i].Points.AddXY(j, Y);
+
+                    double result = table.get_by_y(ver_otkl / 2);
+
+                    eps = result * Math.Pow(pos_to_wall * from_wall / j, .5);
+
+
+                    if (i == count_of_sers - 1 && textBox1.Text != "")
+                    {
+                        try
+                        {
+                            chart2.Series[0].Points.AddXY(j, Math.Abs(Math.Round(eps, 4)));
+                        }
+                        catch (ArgumentOutOfRangeException) { }
+                    }
+                }
+            }
+            #endregion logic
+
+            #region chart2
+            try
+            {
+                chart1.Series.Add("рукав1");
+                chart1.Series[count_of_sers].Color = Color.Orange;
+                chart1.Series[count_of_sers].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chart1.Series[count_of_sers].BorderWidth = 2;
+                chart1.Series.Add("рукав2");
+                chart1.Series[count_of_sers + 1].Color = Color.Orange;
+                chart1.Series[count_of_sers + 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chart1.Series[count_of_sers + 1].BorderWidth = 2;
+                chart1.Series.Add("sr");
+                chart1.Series[count_of_sers + 2].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+                chart1.Series[count_of_sers + 2].Color = Color.Black;
+                chart1.Series[count_of_sers + 2].BorderWidth = 2;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+
+            }
+            #endregion chart2
+
+            #region logic1
+            try
+            {
+                for (int i = 1; i <= count_of_exp; i++)
+                {
+                    min.Clear();
+                    max.Clear();
+                    for (int j = 0; j < count_of_sers; j++)
+                    {
+                        min.Add(chart1.Series[j].Points[i - 1].YValues[0]);
+                        max.Add(chart1.Series[j].Points[i - 1].YValues[0]);
+                    }
+
+                    chart1.Series[count_of_sers + 2].Points.AddXY(i, max.Sum() / count_of_sers);
+
+
+                    min.Sort();
+                    min.RemoveRange(0, del_range);
+                    max.Sort();
+                    max.RemoveRange(count_of_sers - del_range, del_range);
+
+
+
+                    chart1.Series[count_of_sers].Points.AddXY(i, min.Min());
+                    chart1.Series[count_of_sers + 1].Points.AddXY(i, max.Max());
+
+                    // практическая оценка
+                    chart2.Series[1].Points.AddXY(i, Math.Round((max.Max() - min.Min()) / 2, 4));
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+
+            }
+
+            #endregion logic1
+
+            chart1.ChartAreas[0].AxisX.IsLogarithmic = true;
+            chart2.ChartAreas[0].AxisX.IsLogarithmic = true;
+            label3.Text = "Результат: " + Math.Round(Y, 4) + " ± " + Math.Round(eps, 4);
+            label4.Text = " ";
+            label5.Text = " ";
         }
     }
 
